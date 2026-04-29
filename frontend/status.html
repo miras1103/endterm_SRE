@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Status</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="top-bar">
+      <a class="brand" href="index.html">Reliability Hub</a>
+      <nav>
+        <a href="login.html">Login</a>
+        <a href="register.html">Register</a>
+        <a href="products.html">Products</a>
+        <a href="orders.html">Orders</a>
+        <a href="chat.html">Chat</a>
+        <a class="active" href="status.html">Status</a>
+      </nav>
+    </header>
+
+    <main class="page-shell">
+      <section class="page-card">
+        <div class="page-header">
+          <h1>Service Status</h1>
+          <button id="reloadStatusButton">Refresh</button>
+        </div>
+        <div class="status-list">
+          <div class="status-row">
+            <span>Authentication Service</span>
+            <strong id="authStatus">Checking</strong>
+          </div>
+          <div class="status-row">
+            <span>User Service</span>
+            <strong id="userStatus">Checking</strong>
+          </div>
+          <div class="status-row">
+            <span>Product Service</span>
+            <strong id="productStatus">Checking</strong>
+          </div>
+          <div class="status-row">
+            <span>Order Service</span>
+            <strong id="orderStatus">Checking</strong>
+          </div>
+          <div class="status-row">
+            <span>Chat Service</span>
+            <strong id="chatStatus">Checking</strong>
+          </div>
+        </div>
+      </section>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>

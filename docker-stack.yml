@@ -1,0 +1,105 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: app_password
+      POSTGRES_DB: microservices_app
+    networks:
+      - application-network
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  auth-service:
+    image: miras-auth-service:latest
+    environment:
+      DATABASE_URL: postgresql://app_user:app_password@postgres:5432/microservices_app
+      JWT_SECRET: local-development-secret
+    networks:
+      - application-network
+    depends_on:
+      - postgres
+
+  user-service:
+    image: miras-user-service:latest
+    environment:
+      DATABASE_URL: postgresql://app_user:app_password@postgres:5432/microservices_app
+    networks:
+      - application-network
+    depends_on:
+      - postgres
+
+  product-service:
+    image: miras-product-service:latest
+    environment:
+      DATABASE_URL: postgresql://app_user:app_password@postgres:5432/microservices_app
+    networks:
+      - application-network
+    depends_on:
+      - postgres
+
+  order-service:
+    image: miras-order-service:latest
+    environment:
+      DATABASE_URL: postgresql://app_user:app_password@postgres:5432/microservices_app
+      JWT_SECRET: local-development-secret
+    networks:
+      - application-network
+    depends_on:
+      - postgres
+
+  chat-service:
+    image: miras-chat-service:latest
+    environment:
+      DATABASE_URL: postgresql://app_user:app_password@postgres:5432/microservices_app
+      JWT_SECRET: local-development-secret
+    networks:
+      - application-network
+    depends_on:
+      - postgres
+
+  api-gateway:
+    image: nginx:1.27-alpine
+    ports:
+      - "8080:80"
+    networks:
+      - application-network
+    depends_on:
+      - auth-service
+      - user-service
+      - product-service
+      - order-service
+      - chat-service
+
+  frontend:
+    image: nginx:1.27-alpine
+    ports:
+      - "80:80"
+    networks:
+      - application-network
+    depends_on:
+      - api-gateway
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    ports:
+      - "9090:9090"
+    networks:
+      - application-network
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin123
+    ports:
+      - "3000:3000"
+    networks:
+      - application-network
+
+networks:
+  application-network:
+    driver: overlay
+
+volumes:
+  postgres-data:

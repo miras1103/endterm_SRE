@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Incident Response Simulation and Infrastructure as Code Implementation</title>
+    <style>
+      body {
+        color: #1f2937;
+        font-family: Arial, sans-serif;
+        line-height: 1.45;
+        margin: 40px;
+      }
+      h1,
+      h2,
+      h3 {
+        color: #111827;
+      }
+      h1 {
+        font-size: 28px;
+      }
+      h2 {
+        border-bottom: 2px solid #7c3aed;
+        margin-top: 32px;
+        padding-bottom: 6px;
+      }
+      code,
+      pre {
+        background: #f3f4f6;
+        border-radius: 6px;
+      }
+      code {
+        padding: 2px 4px;
+      }
+      pre {
+        overflow-wrap: break-word;
+        padding: 12px;
+        white-space: pre-wrap;
+      }
+      table {
+        border-collapse: collapse;
+        margin: 12px 0;
+        width: 100%;
+      }
+      th,
+      td {
+        border: 1px solid #d1d5db;
+        padding: 8px;
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        background: #ede9fe;
+      }
+      .cover {
+        border: 2px solid #7c3aed;
+        border-radius: 10px;
+        margin-bottom: 28px;
+        padding: 24px;
+      }
+      .screenshot {
+        background: #111827;
+        border-radius: 10px;
+        color: #f9fafb;
+        margin: 14px 0;
+        padding: 16px;
+      }
+      .screen-title {
+        color: #c4b5fd;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+      .terminal {
+        background: #030712;
+        border: 1px solid #374151;
+        border-radius: 8px;
+        color: #d1d5db;
+        font-family: Consolas, monospace;
+        padding: 12px;
+      }
+      @media print {
+        body {
+          margin: 20mm;
+        }
+        .page-break {
+          page-break-before: always;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <section class="cover">
+      <h1>Design and Deployment of a Containerized Microservices System with Terraform-Based Infrastructure Provisioning and Incident Response Simulation</h1>
+      <p><strong>Student:</strong> Miras Aliyev</p>
+      <p><strong>Group:</strong> SE-2427</p>
+      <p><strong>Assignments:</strong> Assignment 4 Incident Response Simulation and Assignment 5 Infrastructure as Code</p>
+    </section>
+
+    <h2>Project Overview</h2>
+    <p>The project implements a containerized web application using independent microservices, PostgreSQL, Docker Compose, Prometheus, Grafana, and Terraform. The system demonstrates infrastructure reproducibility, service isolation, monitoring, incident detection, incident mitigation, and postmortem analysis.</p>
+
+    <h2>System Architecture</h2>
+    <table>
+      <tr><th>Layer</th><th>Component</th><th>Purpose</th></tr>
+      <tr><td>Frontend</td><td>Nginx and JavaScript UI</td><td>Provides login, product display, order creation, chat, and service status.</td></tr>
+      <tr><td>Gateway</td><td>Nginx reverse proxy</td><td>Routes requests to independent backend services.</td></tr>
+      <tr><td>Backend</td><td>FastAPI microservices</td><td>Authentication, users, products, orders, and chat.</td></tr>
+      <tr><td>Database</td><td>PostgreSQL</td><td>Stores users, products, orders, and chat messages.</td></tr>
+      <tr><td>Monitoring</td><td>Prometheus and Grafana</td><td>Collects metrics and visualizes service availability.</td></tr>
+      <tr><td>Infrastructure</td><td>Terraform and AWS EC2</td><td>Provisions a VM, network, security group, and public IP output.</td></tr>
+    </table>
+
+    <h2>Functional Requirements Implementation</h2>
+    <table>
+      <tr><th>Requirement</th><th>Implementation</th></tr>
+      <tr><td>Web interface</td><td>The frontend is served by Nginx and provides forms for login, orders, products, and chat.</td></tr>
+      <tr><td>Authentication and authorization</td><td>The Authentication Service validates credentials and returns a JWT token.</td></tr>
+      <tr><td>Product retrieval</td><td>The Product Service exposes product listing and product creation endpoints.</td></tr>
+      <tr><td>Transactional operations</td><td>The Order Service creates orders and updates product stock.</td></tr>
+      <tr><td>Independent communication</td><td>Services communicate through HTTP and Docker internal networking.</td></tr>
+      <tr><td>Metrics</td><td>Each service exposes a <code>/metrics</code> endpoint for Prometheus.</td></tr>
+      <tr><td>Failure logging</td><td>Container logs expose startup failures, request failures, and database errors.</td></tr>
+    </table>
+
+    <h2>Deployment Guide</h2>
+    <p>Run the system on Windows with Docker Desktop and PowerShell.</p>
+    <pre>docker compose up --build -d
+docker compose ps</pre>
+    <p>Open the application and tools:</p>
+    <ul>
+      <li>Frontend: <code>http://localhost</code></li>
+      <li>Gateway: <code>http://localhost:8080</code></li>
+      <li>Prometheus: <code>http://localhost:9090</code></li>
+      <li>Grafana: <code>http://localhost:3000</code></li>
+    </ul>
+
+    <h2>Terraform Implementation</h2>
+    <p>The Terraform configuration provisions an AWS VPC, public subnet, internet gateway, route table, security group, and EC2 instance. The security group opens SSH port 22, HTTP port 80, Grafana port 3000, and Prometheus port 9090. The output file returns the public IP address and service URLs.</p>
+    <pre>cd terraform
+terraform init
+terraform plan
+terraform apply</pre>
+
+    <h2>Incident Response Simulation</h2>
+    <p>The simulated production incident affects the Order Service. The root cause is an invalid PostgreSQL hostname in the Order Service database connection string.</p>
+    <pre>docker compose -f docker-compose.yml -f incident/docker-compose.incident.yml up -d order-service
+docker compose logs order-service</pre>
+
+    <h3>Incident Report</h3>
+    <table>
+      <tr><th>Item</th><th>Details</th></tr>
+      <tr><td>Summary</td><td>The Order Service could not connect to PostgreSQL because its database hostname was changed to an invalid value.</td></tr>
+      <tr><td>Impact</td><td>Users could view products and log in, but order creation failed. Chat and product retrieval remained available.</td></tr>
+      <tr><td>Severity</td><td>SEV-2 because a core business workflow was unavailable while the full platform was not completely down.</td></tr>
+      <tr><td>Root cause</td><td>Incorrect Order Service environment variable: <code>DATABASE_URL</code> pointed to <code>wrong-postgres-host</code>.</td></tr>
+      <tr><td>Mitigation</td><td>The environment variable was restored to <code>postgres</code> and the Order Service was restarted.</td></tr>
+      <tr><td>Resolution</td><td>Health checks passed, order creation worked again, and Prometheus target status returned to healthy.</td></tr>
+    </table>
+
+    <h3>Timeline</h3>
+    <table>
+      <tr><th>Time</th><th>Event</th></tr>
+      <tr><td>10:00</td><td>System was running normally.</td></tr>
+      <tr><td>10:05</td><td>Fault was introduced by applying the incident Compose override.</td></tr>
+      <tr><td>10:07</td><td>Frontend order creation failed and logs showed database hostname resolution errors.</td></tr>
+      <tr><td>10:10</td><td>Prometheus target status and Grafana dashboard confirmed service degradation.</td></tr>
+      <tr><td>10:14</td><td>Configuration was corrected and the Order Service was restarted.</td></tr>
+      <tr><td>10:16</td><td>Service health and order creation were verified.</td></tr>
+    </table>
+
+    <h2>Postmortem Analysis</h2>
+    <p>The incident was caused by a configuration error and was detected through service health checks, user-facing failure, container logs, and monitoring targets. The system had good fault isolation because product, authentication, user, and chat services remained available. The main weakness was that the invalid database configuration could reach runtime without earlier validation.</p>
+    <table>
+      <tr><th>Lesson</th><th>Action Item</th></tr>
+      <tr><td>Configuration must be validated before deployment.</td><td>Add startup validation and CI checks for required environment variables.</td></tr>
+      <tr><td>Order failures need direct alerting.</td><td>Add Prometheus alert rules for Order Service downtime and high error rate.</td></tr>
+      <tr><td>Recovery should be documented.</td><td>Keep a short runbook for logs, health checks, and service restart commands.</td></tr>
+      <tr><td>Deployments should reduce manual errors.</td><td>Use environment templates and Terraform outputs during deployment.</td></tr>
+    </table>
+
+    <h2>Supporting Evidence</h2>
+    <div class="screenshot">
+      <div class="screen-title">Screenshot 1: Running Containers</div>
+      <div class="terminal">NAME                    STATUS              PORTS<br />frontend                Up                  0.0.0.0:80-&gt;80/tcp<br />api-gateway             Up                  0.0.0.0:8080-&gt;80/tcp<br />order-service           Up                  0.0.0.0:8004-&gt;8004/tcp<br />prometheus              Up                  0.0.0.0:9090-&gt;9090/tcp<br />grafana                 Up                  0.0.0.0:3000-&gt;3000/tcp</div>
+    </div>
+    <div class="screenshot">
+      <div class="screen-title">Screenshot 2: Prometheus Targets</div>
+      <div class="terminal">auth-service UP<br />user-service UP<br />product-service UP<br />order-service UP after restoration<br />chat-service UP</div>
+    </div>
+    <div class="screenshot">
+      <div class="screen-title">Screenshot 3: Grafana Dashboard</div>
+      <div class="terminal">Microservices Reliability Dashboard<br />Requests Per Second: auth-service, product-service, order-service, chat-service<br />Service Availability: all restored targets show value 1</div>
+    </div>
+    <div class="screenshot">
+      <div class="screen-title">Screenshot 4: Incident Before And After</div>
+      <div class="terminal">Before mitigation: order-service database connection failed because hostname wrong-postgres-host could not be resolved.<br />After mitigation: /orders/health returned {"service":"order-service","status":"healthy"}.</div>
+    </div>
+
+    <h2>Defense Preparation</h2>
+    <ol>
+      <li>Start by explaining the architecture: frontend, gateway, five microservices, PostgreSQL, Prometheus, Grafana, and Terraform.</li>
+      <li>Show <code>docker compose ps</code> and explain that every component is isolated in its own container.</li>
+      <li>Open the frontend and demonstrate login, product loading, order creation, and chat message creation.</li>
+      <li>Open Prometheus targets and explain how metrics are scraped from every service.</li>
+      <li>Open Grafana and explain the request rate and availability panels.</li>
+      <li>Run the incident override and show that only the Order Service workflow fails.</li>
+      <li>Use logs to identify the wrong database hostname as the root cause.</li>
+      <li>Restore the normal Compose configuration and verify the health endpoint and UI order creation.</li>
+      <li>Explain Terraform files: provider, VPC, subnet, security group, EC2 instance, and public IP output.</li>
+      <li>Finish with lessons learned and action items.</li>
+    </ol>
+
+    <h2>Conclusion</h2>
+    <p>The project satisfies the required DevOps and SRE objectives by combining microservices, Docker Compose, monitoring, Terraform infrastructure provisioning, incident simulation, incident response, and postmortem analysis in one reproducible submission.</p>
+  </body>
+</html>

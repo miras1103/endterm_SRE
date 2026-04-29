@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="top-bar">
+      <a class="brand" href="index.html">Reliability Hub</a>
+      <nav>
+        <a href="login.html">Login</a>
+        <a href="register.html">Register</a>
+        <a href="products.html">Products</a>
+        <a href="orders.html">Orders</a>
+        <a class="active" href="chat.html">Chat</a>
+        <a href="status.html">Status</a>
+      </nav>
+    </header>
+
+    <main class="page-shell">
+      <section class="page-card">
+        <h1>Chat</h1>
+        <label>Receiver ID</label>
+        <input id="receiverIdInput" type="number" value="2" />
+        <label>Message</label>
+        <input id="messageInput" value="Hello, I need order support." />
+        <button id="sendMessageButton">Send Message</button>
+        <div id="chatResult" class="result-box"></div>
+      </section>
+      <section class="page-card spaced-card">
+        <div class="page-header">
+          <h1>Messages</h1>
+          <button id="reloadMessagesButton">Reload</button>
+        </div>
+        <div id="messageList" class="data-list"></div>
+      </section>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>

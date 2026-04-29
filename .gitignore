@@ -1,0 +1,10 @@
+.env
+*.pyc
+__pycache__/
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+grafana-data/
+postgres-data/
+prometheus-data/

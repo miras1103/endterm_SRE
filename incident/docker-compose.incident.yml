@@ -1,0 +1,4 @@
+services:
+  order-service:
+    environment:
+      DATABASE_URL: postgresql://app_user:app_password@wrong-postgres-host:5432/microservices_app
