@@ -110,3 +110,119 @@ Set real cloud credentials before applying. The configuration is written for AWS
 ## PDF Report
 
 Open `docs/final-report.html` in a browser and print it as PDF. The report contains the required deployment guide, Terraform explanation, incident response report, postmortem, and screenshot evidence placeholders.
+
+## Assignment 6 We Added
+
+Assignment 6 extends the previous incident response and Terraform work with SRE automation, monitoring-based alerting, and capacity planning for the Dockerized microservices system.
+
+### Automation Mechanisms
+
+- Added `restart: unless-stopped` policies for the application, database, gateway, frontend, Prometheus, and Grafana containers.
+- Added Docker health checks for the backend microservices using their HTTP `/health` endpoints.
+- Added health checks for the API gateway and frontend.
+- Added an API gateway `/health` endpoint in `gateway/nginx.conf`.
+- Connected Prometheus alert rules through `monitoring/alert_rules.yml`.
+- Added pre-deployment validation in `scripts/validate_config.ps1` to check important configuration before deployment.
+
+Run validation before starting the system:
+
+```powershell
+.\scripts\validate_config.ps1
+docker compose up --build -d
+```
+
+The validation script checks:
+
+- Required environment variables in `.env`.
+- Matching variables in `.env.example` as the deployment template.
+- Correct PostgreSQL `DATABASE_URL` format and Docker hostname.
+- Template variable usage in `docker-compose.yml` and `docker-stack.yml`.
+- API gateway upstream endpoints for all backend services.
+- Prometheus scrape endpoints and Docker health check URLs.
+
+### Monitoring And Alerting
+
+Prometheus now loads alert rules from:
+
+```text
+monitoring/alert_rules.yml
+```
+
+Implemented alert conditions:
+
+- `ServiceDown`: triggers when Prometheus cannot scrape a service.
+- `HighErrorRate`: triggers when 5xx responses are above 5 percent.
+- `HighLatency`: triggers when p95 request latency is above 1 second.
+
+Useful Prometheus pages:
+
+- Targets: http://localhost:9090/targets
+- Alerts: http://localhost:9090/alerts
+
+### Capacity Planning
+
+The system capacity is analyzed using Prometheus metrics and a lightweight load script:
+
+```powershell
+.\scripts\load_test_orders.ps1 -Requests 100 -DelayMilliseconds 50
+```
+
+Metrics used for capacity analysis:
+
+- CPU usage and memory utilization from containers
+- Request rate through `service_http_requests_total`
+- Error rate through HTTP `5xx` responses
+- Response latency through `service_http_request_duration_seconds`
+- Container health and restart behavior through Docker
+
+Observed capacity risks:
+
+- Order Service becomes the main bottleneck under increased request load.
+- Response time increases when the Order Service or database is saturated.
+- Error rates may increase if database connections or CPU resources are insufficient.
+- PostgreSQL can become a shared bottleneck because Product and Order workflows both depend on it.
+
+### Scaling Strategy
+
+Recommended scaling approach:
+
+- Horizontally scale the Order Service when request rate increases.
+- Add a load balancer or orchestration platform such as Kubernetes for multiple service replicas.
+- Vertically scale the VM with Terraform by increasing `instance_type` in `terraform/terraform.tfvars`.
+- Add database connection pooling before scaling API replicas heavily.
+- Optimize database queries and indexes if latency grows during load tests.
+
+Current Terraform capacity setting:
+
+```hcl
+instance_type = "t3.micro"
+```
+
+For higher load, change it for example to:
+
+```hcl
+instance_type = "t3.small"
+```
+
+Then apply:
+
+```powershell
+cd terraform
+terraform plan
+terraform apply
+```
+
+### Evidence To Include In The PDF
+
+Recommended screenshots for Assignment 6:
+
+- `docker compose ps` showing healthy services.
+- Prometheus targets page showing all services as up.
+- Prometheus alerts page showing configured rules.
+- Grafana dashboard during normal load.
+- Grafana dashboard or Prometheus metrics during load test.
+- Order Service recovery after stopping or misconfiguring the container.
+
+### Summary
+
+For Assignment 6, we added automation for deployment safety, service recovery, health checking, monitoring alerts, configuration validation, and basic load testing. We also documented capacity risks and scaling strategies based on SRE principles.

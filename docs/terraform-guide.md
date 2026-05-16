@@ -2,7 +2,7 @@
 
 Student: Miras Aliyev  
 Group: SE-2427  
-Project: Reliability Hub  
+Project: Reliability Hub
 
 ## Purpose
 
@@ -12,12 +12,12 @@ This document explains the Infrastructure as Code part of the project. Terraform
 
 The Terraform configuration is stored in the `terraform` folder.
 
-| File | Purpose |
-| --- | --- |
-| `main.tf` | Creates the AWS provider configuration, VPC, subnet, internet gateway, route table, security group, and EC2 instance. |
-| `variables.tf` | Defines configurable values such as AWS region, AMI, instance type, key pair name, and SSH CIDR. |
-| `terraform.tfvars` | Provides actual values for the variables. |
-| `outputs.tf` | Prints the public IP address and service URLs after infrastructure creation. |
+| File               | Purpose                                                                                                               |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| `main.tf`          | Creates the AWS provider configuration, VPC, subnet, internet gateway, route table, security group, and EC2 instance. |
+| `variables.tf`     | Defines configurable values such as AWS region, AMI, instance type, key pair name, and SSH CIDR.                      |
+| `terraform.tfvars` | Provides actual values for the variables.                                                                             |
+| `outputs.tf`       | Prints the public IP address and service URLs after infrastructure creation.                                          |
 
 ## Provisioned Infrastructure
 
@@ -35,12 +35,12 @@ Terraform creates the following AWS resources:
 
 The security group allows the required ports:
 
-| Port | Service | Purpose |
-| --- | --- | --- |
-| `22` | SSH | Remote access to the Ubuntu server |
-| `80` | HTTP | Frontend access |
-| `3000` | Grafana | Monitoring dashboard |
-| `9090` | Prometheus | Metrics and targets |
+| Port   | Service    | Purpose                            |
+| ------ | ---------- | ---------------------------------- |
+| `22`   | SSH        | Remote access to the Ubuntu server |
+| `80`   | HTTP       | Frontend access                    |
+| `3000` | Grafana    | Monitoring dashboard               |
+| `9090` | Prometheus | Metrics and targets                |
 
 ## Required Tools
 
@@ -150,6 +150,8 @@ Connect to the server:
 ```powershell
 ssh -i miras-key.pem ubuntu@PUBLIC_IP
 ```
+
+ssh -i C:\.ssh\miras-key.pem ubuntu@100.54.103.41
 
 Install Docker:
 
