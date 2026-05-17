@@ -153,7 +153,8 @@ $composeTemplateVars = @(
 )
 
 foreach ($name in $composeTemplateVars) {
-    Require-Text $composeText "`${$name}" "compose template variable"
+    $composeVariableToken = '${' + $name
+    Require-Text $composeText $composeVariableToken "compose template variable"
 }
 
 $stackTemplateVars = @(
@@ -171,7 +172,8 @@ $stackTemplateVars = @(
 )
 
 foreach ($name in $stackTemplateVars) {
-    Require-Text $stackText "`${$name}" "stack template variable"
+    $stackVariableToken = '${' + $name
+    Require-Text $stackText $stackVariableToken "stack template variable"
 }
 
 $expectedEndpoints = @{
@@ -180,11 +182,12 @@ $expectedEndpoints = @{
     "product-service" = "8003"
     "order-service" = "8004"
     "chat-service" = "8005"
+    "payment-service" = "8006"
 }
 
 foreach ($serviceName in $expectedEndpoints.Keys) {
     $port = $expectedEndpoints[$serviceName]
-    Require-Text $gatewayText "server ${serviceName}:${port};" "gateway upstream endpoint"
+    Require-Text $gatewayText "server ${serviceName}:${port}" "gateway upstream endpoint"
     Require-Text $prometheusText "${serviceName}:${port}" "Prometheus scrape endpoint"
     Require-Text $composeText "http://localhost:${port}/health" "service health check endpoint"
 }

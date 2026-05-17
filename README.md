@@ -47,6 +47,7 @@ terraform/      Infrastructure as Code files
 scripts/        Validation, load test, Swarm helper scripts
 docs/           Report, postmortem, Terraform guide
 evidence/       Screenshot evidence
+.github/        GitHub Actions CI/CD pipeline
 ```
 
 ## Prerequisites
@@ -311,6 +312,60 @@ Run configuration validation before deployment:
 
 This checks environment variables, Docker Compose/Swarm configuration, gateway routes, Prometheus scrape targets, and health check endpoints.
 
+## CI/CD Pipeline
+
+The final project includes a GitHub Actions pipeline in:
+
+```text
+.github/workflows/ci-cd.yml
+```
+
+The pipeline has two main stages.
+
+### CI Stage
+
+CI runs on pull requests and pushes to `main` or `master`.
+
+It validates:
+
+- Python service syntax with `py_compile`
+- Docker Compose configuration
+- Project configuration using `scripts/validate_config.ps1`
+- Kubernetes manifests with `kubectl apply --dry-run=client`
+- Ansible playbook syntax
+- Terraform formatting
+- Docker image builds for all six microservices
+
+### CD Stage
+
+CD runs after CI on pushes to `main` or `master`.
+
+It builds and publishes Docker images for all six backend services to GitHub Container Registry:
+
+- `auth-service`
+- `user-service`
+- `product-service`
+- `order-service`
+- `chat-service`
+- `payment-service`
+
+The workflow uses GitHub's built-in `GITHUB_TOKEN`, so no custom deployment secrets are required for this medium CI/CD setup.
+
+To run CI/CD:
+
+```powershell
+git add -A
+git commit -m "Add CI/CD pipeline"
+git push origin main
+```
+
+Then open the GitHub repository:
+
+```text
+Actions -> CI/CD Pipeline
+Packages -> published Docker images
+```
+
 ## Evidence For Report
 
 Recommended screenshots:
@@ -323,6 +378,8 @@ Recommended screenshots:
 - `kubectl get svc -n microservices`
 - `ansible --version`
 - `ansible-playbook ansible/playbooks/deploy_compose.yml`
+- GitHub Actions CI/CD successful run
+- GitHub Container Registry packages
 - Prometheus targets page
 - Grafana dashboard
 - Incident logs and recovery command output
@@ -335,6 +392,7 @@ Recommended screenshots:
 - Terraform IaC files
 - Ansible automation playbooks
 - Monitoring and alerting configuration
+- GitHub Actions CI/CD pipeline
 - Incident response and postmortem documentation
 - Screenshot evidence
 - Final PDF report with GitHub repository link

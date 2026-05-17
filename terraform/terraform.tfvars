@@ -1,6 +1,6 @@
 aws_region        = "us-east-1"
 availability_zone = "us-east-1a"
 instance_ami      = "ami-0c7217cdde317cfec"
-instance_type = "t3.micro"
+instance_type     = "t3.micro"
 key_pair_name     = "miras-key"
 allowed_ssh_cidr  = "0.0.0.0/0"
