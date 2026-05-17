@@ -1,4 +1,5 @@
 from fastapi import Depends, FastAPI, HTTPException
+import requests
 from pydantic import BaseModel
 
 from shared.auth import get_current_user_id
@@ -53,6 +54,11 @@ def list_orders(current_user_id: int = Depends(get_current_user_id)):
     return {"orders": orders}
 
 
+@app.get("/")
+def list_orders_root(current_user_id: int = Depends(get_current_user_id)):
+    return list_orders(current_user_id)
+
+
 @app.post("/orders")
 def create_order(order_request: OrderCreateRequest, current_user_id: int = Depends(get_current_user_id)):
     if order_request.quantity <= 0:
@@ -68,6 +74,14 @@ def create_order(order_request: OrderCreateRequest, current_user_id: int = Depen
     if product["available_quantity"] < order_request.quantity:
         raise HTTPException(status_code=409, detail="Not enough product stock")
 
+    # Call payment service before creating the order
+    try:
+        payment_resp = requests.post("http://payment-service:8006/pay", json={"amount": 0})
+        if payment_resp.status_code != 200 or payment_resp.json().get("status") != "processed":
+            raise HTTPException(status_code=402, detail="Payment failed")
+    except requests.RequestException:
+        raise HTTPException(status_code=502, detail="Payment service unavailable")
+
     order = run_database_command(
         """
         INSERT INTO orders (user_id, product_id, quantity, status)
@@ -82,6 +96,11 @@ def create_order(order_request: OrderCreateRequest, current_user_id: int = Depen
         (order_request.quantity, order_request.product_id),
     )
     return order
+
+
+@app.post("/")
+def create_order_root(order_request: OrderCreateRequest, current_user_id: int = Depends(get_current_user_id)):
+    return create_order(order_request, current_user_id)
 
 
 @app.get("/metrics")

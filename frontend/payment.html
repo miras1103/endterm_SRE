@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Reliability Hub</title>
+    <title>Payment</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -14,6 +14,7 @@
         <a href="register.html">Register</a>
         <a href="products.html">Products</a>
         <a href="orders.html">Orders</a>
+        <a class="active" href="payment.html">Payment</a>
         <a href="chat.html">Chat</a>
         <a href="status.html">Status</a>
       </nav>
@@ -21,21 +22,20 @@
 
     <main class="page-shell">
       <section class="page-card">
-        <h1>Reliability Hub</h1>
+        <h1>Payment Service</h1>
         <p>
-          Simple web interface for authentication, products, payment, orders,
-          chat, and service health monitoring across 6 microservices.
+          The Payment Service is the sixth microservice in this demo. It is
+          invoked automatically when a customer buys a product from the Products
+          page.
         </p>
-        <div class="link-grid">
-          <a href="login.html">Open Login</a>
-          <a href="register.html">Create Account</a>
-          <a href="products.html">View Products</a>
-          <a href="orders.html">Create Order</a>
-          <a href="payment.html">Payment</a>
-          <a href="chat.html">Open Chat</a>
-          <a href="status.html">Check Status</a>
-        </div>
+        <p>
+          Use this page to verify the payment service health and to run a simple
+          test payment request.
+        </p>
+        <button id="checkPaymentButton">Check Payment Service</button>
+        <div id="paymentResult" class="result-box"></div>
       </section>
     </main>
+    <script src="app.js?v=3"></script>
   </body>
 </html>

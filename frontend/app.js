@@ -60,23 +60,68 @@ function updateNavigation() {
   }
 }
 
+function parseErrorBody(body) {
+  if (!body) {
+    return "Request failed";
+  }
+  if (body instanceof Error) {
+    return body.message || body.toString();
+  }
+  if (typeof body === "string") {
+    return body;
+  }
+  if (typeof body.detail === "string") {
+    return body.detail;
+  }
+  if (Array.isArray(body.detail)) {
+    return body.detail
+      .map((item) => {
+        if (typeof item === "string") {
+          return item;
+        }
+        if (item?.msg) {
+          if (item?.loc) {
+            return `${item.loc.join(".")}: ${item.msg}`;
+          }
+          return item.msg;
+        }
+        return JSON.stringify(item);
+      })
+      .join("; ");
+  }
+  if (body.message) {
+    return body.message;
+  }
+  return JSON.stringify(body);
+}
+
 async function requestJson(path, options = {}) {
+  const headers = {
+    "Content-Type": "application/json",
+    ...(options.headers || {}),
+  };
   const response = await fetch(`${gatewayBaseUrl}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
     ...options,
+    headers,
   });
-  const responseBody = await response.json();
+
+  const text = await response.text();
+  let responseBody;
+  try {
+    responseBody = text ? JSON.parse(text) : null;
+  } catch {
+    responseBody = text;
+  }
+
   if (!response.ok) {
-    throw new Error(responseBody.detail || "Request failed");
+    throw new Error(parseErrorBody(responseBody));
   }
   return responseBody;
 }
 
 function showError(element, message) {
-  element.innerHTML = `<p class="error-text">${message}</p>`;
+  const text = typeof message === "string" ? message : parseErrorBody(message);
+  element.innerHTML = `<p class="error-text">${text}</p>`;
 }
 
 function setStatus(element, isHealthy) {
@@ -97,15 +142,24 @@ async function updateServiceStatus() {
   const statusItems = [
     { path: "/auth/health", element: document.querySelector("#authStatus") },
     { path: "/users/health", element: document.querySelector("#userStatus") },
-    { path: "/products/health", element: document.querySelector("#productStatus") },
+    {
+      path: "/products/health",
+      element: document.querySelector("#productStatus"),
+    },
     { path: "/orders/health", element: document.querySelector("#orderStatus") },
+    {
+      path: "/payment/health",
+      element: document.querySelector("#paymentStatus"),
+    },
     { path: "/chat/health", element: document.querySelector("#chatStatus") },
   ];
 
   await Promise.all(
     statusItems
       .filter((statusItem) => statusItem.element)
-      .map((statusItem) => checkServiceStatus(statusItem.path, statusItem.element)),
+      .map((statusItem) =>
+        checkServiceStatus(statusItem.path, statusItem.element),
+      ),
   );
 }
 
@@ -121,11 +175,65 @@ async function loadProducts() {
     data.products.forEach((product) => {
       const productElement = document.createElement("div");
       productElement.className = "product-item";
-      productElement.innerHTML = `<strong>${product.name}</strong><span>${product.description}</span><p>$${product.price} | Stock: ${product.available_quantity}</p>`;
+      productElement.innerHTML = `
+        <strong>${product.name}</strong>
+        <span>${product.description}</span>
+        <p>$${product.price} | Stock: ${product.available_quantity}</p>
+        <div class="product-actions">
+          <label>Quantity</label>
+          <input id="productQty-${product.id}" type="number" min="1" value="1" class="quantity-input" />
+          <button id="buyProduct-${product.id}" class="buy-button">Buy</button>
+        </div>
+      `;
       productList.appendChild(productElement);
+      const buyButton = productElement.querySelector(
+        `#buyProduct-${product.id}`,
+      );
+      buyButton?.addEventListener("click", () => buyProduct(product.id));
     });
   } catch (error) {
-    productList.textContent = error.message;
+    productList.textContent = parseErrorBody(error);
+  }
+}
+
+async function buyProduct(productId) {
+  const productBuyResult = document.querySelector("#productBuyResult");
+  if (!productBuyResult) {
+    return;
+  }
+
+  const savedAuth = getSavedAuth();
+  if (!savedAuth) {
+    showError(productBuyResult, "Please log in before buying a product");
+    return;
+  }
+
+  try {
+    const quantityInput = document.querySelector(`#productQty-${productId}`);
+    const quantity = Number(quantityInput?.value) || 1;
+
+    const data = await requestJson("/orders/orders", {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        product_id: productId,
+        quantity,
+      }),
+    });
+
+    productBuyResult.innerHTML = `
+      <p class="success-text">Product purchased successfully</p>
+      <p><strong>Order ID:</strong> ${data.id}</p>
+      <p><strong>Product ID:</strong> ${data.product_id}</p>
+      <p><strong>Quantity:</strong> ${data.quantity}</p>
+      <p><strong>Status:</strong> ${data.status}</p>
+      <p><strong>Payment:</strong> processed successfully</p>
+    `;
+
+    await loadProducts();
+    await loadOrders();
+  } catch (error) {
+    showError(productBuyResult, error);
   }
 }
 
@@ -149,7 +257,7 @@ async function loginUser() {
       <p><strong>Token type:</strong> ${data.token_type}</p>
     `;
   } catch (error) {
-    showError(loginResult, error.message);
+    showError(loginResult, error);
   }
 }
 
@@ -172,7 +280,7 @@ async function registerUser() {
       <p><strong>Role:</strong> ${data.user.role}</p>
     `;
   } catch (error) {
-    showError(registerResult, error.message);
+    showError(registerResult, error);
   }
 }
 
@@ -185,6 +293,13 @@ async function createOrder() {
   }
 
   try {
+    // Call payment endpoint before creating order
+    await requestJson("/payment/pay", {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ amount: 0 }),
+    });
+
     const data = await requestJson("/orders/orders", {
       method: "POST",
       headers: getAuthHeaders(),
@@ -195,6 +310,7 @@ async function createOrder() {
     });
     orderResult.innerHTML = `
       <p class="success-text">Order created successfully</p>
+      <p><strong>Payment:</strong> processed successfully</p>
       <p><strong>Order ID:</strong> ${data.id}</p>
       <p><strong>User ID:</strong> ${data.user_id}</p>
       <p><strong>Product ID:</strong> ${data.product_id}</p>
@@ -203,7 +319,30 @@ async function createOrder() {
     `;
     await loadOrders();
   } catch (error) {
-    showError(orderResult, error.message);
+    showError(orderResult, error);
+  }
+}
+
+async function simulatePayment() {
+  const paymentResult = document.querySelector("#paymentResult");
+  if (!paymentResult) {
+    return;
+  }
+
+  try {
+    const data = await requestJson("/payment/pay", {
+      method: "POST",
+      body: JSON.stringify({ amount: 1.0 }),
+    });
+
+    paymentResult.innerHTML = `
+      <p class="success-text">Payment service check passed</p>
+      <p><strong>Status:</strong> ${data.status}</p>
+      <p><strong>Amount:</strong> ${data.amount}</p>
+      <p>This payment service is ready for order processing.</p>
+    `;
+  } catch (error) {
+    showError(paymentResult, error);
   }
 }
 
@@ -214,7 +353,8 @@ async function loadOrders() {
   }
 
   if (!getSavedAuth()) {
-    orderList.innerHTML = '<p class="muted-text">Please log in to see your orders.</p>';
+    orderList.innerHTML =
+      '<p class="muted-text">Please log in to see your orders.</p>';
     return;
   }
 
@@ -240,7 +380,7 @@ async function loadOrders() {
       orderList.appendChild(orderElement);
     });
   } catch (error) {
-    orderList.innerHTML = `<p class="error-text">${error.message}</p>`;
+    orderList.innerHTML = `<p class="error-text">${parseErrorBody(error)}</p>`;
   }
 }
 
@@ -270,7 +410,7 @@ async function sendMessage() {
     `;
     await loadMessages();
   } catch (error) {
-    showError(chatResult, error.message);
+    showError(chatResult, error);
   }
 }
 
@@ -281,7 +421,8 @@ async function loadMessages() {
   }
 
   if (!getSavedAuth()) {
-    messageList.innerHTML = '<p class="muted-text">Please log in to see your messages.</p>';
+    messageList.innerHTML =
+      '<p class="muted-text">Please log in to see your messages.</p>';
     return;
   }
 
@@ -305,7 +446,7 @@ async function loadMessages() {
       messageList.appendChild(messageElement);
     });
   } catch (error) {
-    messageList.innerHTML = `<p class="error-text">${error.message}</p>`;
+    messageList.innerHTML = `<p class="error-text">${parseErrorBody(error)}</p>`;
   }
 }
 
@@ -321,6 +462,7 @@ connectButton("#registerButton", registerUser);
 connectButton("#reloadProductsButton", loadProducts);
 connectButton("#createOrderButton", createOrder);
 connectButton("#reloadOrdersButton", loadOrders);
+connectButton("#checkPaymentButton", simulatePayment);
 connectButton("#sendMessageButton", sendMessage);
 connectButton("#reloadMessagesButton", loadMessages);
 connectButton("#reloadStatusButton", updateServiceStatus);

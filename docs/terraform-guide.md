@@ -151,8 +151,6 @@ Connect to the server:
 ssh -i miras-key.pem ubuntu@PUBLIC_IP
 ```
 
-ssh -i C:\.ssh\miras-key.pem ubuntu@100.54.103.41
-
 Install Docker:
 
 ```bash
@@ -172,14 +170,14 @@ exit
 Copy the project from Windows to EC2:
 
 ```powershell
-scp -i miras-key.pem -r C:\Users\Miras\Desktop\assigmnent4-5 ubuntu@PUBLIC_IP:/home/ubuntu/
+scp -i miras-key.pem -r <project-directory> ubuntu@PUBLIC_IP:/home/ubuntu/endterm
 ```
 
 Run the project on Ubuntu:
 
 ```bash
-cd /home/ubuntu/assigmnent4-5
-docker compose up --build -d
+cd /home/ubuntu/endterm
+docker compose -f docker-compose.yml -f ansible/docker-compose.local.yml up --build -d
 docker compose ps
 ```
 
@@ -191,9 +189,9 @@ http://PUBLIC_IP:3000
 http://PUBLIC_IP:9090
 ```
 
-## Screenshots To Include
+## Evidence To Include
 
-For Assignment 5, include these screenshots:
+For the endterm report, include these screenshots:
 
 1. `terraform init` success
 2. `terraform plan` output
@@ -259,7 +257,7 @@ docker compose ps
 
 ## Destroy Infrastructure
 
-After finishing screenshots or defense, destroy the infrastructure to avoid AWS charges:
+After finishing evidence capture or defense, destroy the infrastructure to avoid AWS charges:
 
 ```powershell
 terraform destroy
@@ -276,5 +274,5 @@ yes
 Use this explanation during defense:
 
 ```text
-For Assignment 5, I used Terraform to provision AWS infrastructure. The configuration creates a VPC, public subnet, internet gateway, route table, security group, and EC2 instance. The security group opens SSH, HTTP, Grafana, and Prometheus ports. Terraform outputs the public IP address and service URLs. This makes the infrastructure reproducible because the same environment can be created again using terraform init, terraform plan, and terraform apply.
+For the endterm project, I used Terraform to provision AWS infrastructure. The configuration creates a VPC, public subnet, internet gateway, route table, security group, and EC2 instance. The security group opens SSH, HTTP, Grafana, and Prometheus ports. Terraform outputs the public IP address and service URLs. This makes the infrastructure reproducible because the same environment can be created again using terraform init, terraform plan, and terraform apply.
 ```

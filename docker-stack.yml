@@ -58,6 +58,13 @@ services:
     depends_on:
       - postgres
 
+  payment-service:
+    image: miras-payment-service:latest
+    networks:
+      - application-network
+    depends_on:
+      - postgres
+
   api-gateway:
     image: nginx:1.27-alpine
     ports:
@@ -70,6 +77,7 @@ services:
       - product-service
       - order-service
       - chat-service
+      - payment-service
 
   frontend:
     image: nginx:1.27-alpine

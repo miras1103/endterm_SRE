@@ -1,5 +1,5 @@
 from fastapi import Depends, FastAPI
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from shared.auth import get_current_user_id
 from shared.database import run_database_command
@@ -12,8 +12,11 @@ app.add_middleware(MetricsMiddleware, service_name=service_name)
 
 
 class ChatMessageRequest(BaseModel):
-    receiver_id: int
-    message_text: str
+    receiver_id: int = Field(..., alias="receiverId")
+    message_text: str = Field(..., alias="messageText")
+
+    class Config:
+        allow_population_by_field_name = True
 
 
 @app.on_event("startup")
@@ -51,6 +54,11 @@ def list_messages(current_user_id: int = Depends(get_current_user_id)):
     return {"messages": messages}
 
 
+@app.get("/")
+def list_messages_root(current_user_id: int = Depends(get_current_user_id)):
+    return list_messages(current_user_id)
+
+
 @app.post("/messages")
 def create_message(message_request: ChatMessageRequest, current_user_id: int = Depends(get_current_user_id)):
     message = run_database_command(
@@ -67,6 +75,11 @@ def create_message(message_request: ChatMessageRequest, current_user_id: int = D
         fetch_one=True,
     )
     return message
+
+
+@app.post("/")
+def create_message_root(message_request: ChatMessageRequest, current_user_id: int = Depends(get_current_user_id)):
+    return create_message(message_request, current_user_id)
 
 
 @app.get("/metrics")

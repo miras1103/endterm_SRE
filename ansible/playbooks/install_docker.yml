@@ -1,0 +1,7 @@
+- hosts: localhost
+  connection: local
+  become: false
+  tasks:
+    - name: Ensure Docker is available (assumes Docker Desktop on Windows)
+      ansible.builtin.debug:
+        msg: "This playbook documents steps to install Docker. On Windows use Docker Desktop installer instead."

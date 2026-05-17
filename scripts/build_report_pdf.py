@@ -153,7 +153,7 @@ y += 70
 y = add_heading(draw, "Project Overview", y)
 y = draw_wrapped_text(
     draw,
-    "This project implements a containerized microservices application with a frontend, API gateway, five FastAPI services, PostgreSQL, Prometheus, Grafana, and Terraform infrastructure files. It also includes a realistic Order Service incident simulation, response process, and postmortem analysis.",
+    "This project implements a containerized microservices application with a frontend, API gateway, six FastAPI services, PostgreSQL, Prometheus, Grafana, and Terraform infrastructure files. It also includes a realistic Order Service incident simulation, response process, and postmortem analysis.",
     margin,
     y,
     body_font,

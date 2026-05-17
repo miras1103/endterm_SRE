@@ -1,0 +1,14 @@
+- hosts: localhost
+  connection: local
+  become: false
+  tasks:
+    - name: Ensure project directory exists
+      ansible.builtin.file:
+        path: "{{ playbook_dir }}/../.."
+        state: directory
+
+    - name: Run docker compose up
+      ansible.builtin.command:
+        cmd: docker compose -f docker-compose.yml -f ansible/docker-compose.local.yml up --build -d
+      args:
+        chdir: "{{ playbook_dir }}/../.."

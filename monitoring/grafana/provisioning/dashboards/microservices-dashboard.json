@@ -47,6 +47,50 @@
       ],
       "title": "Service Availability",
       "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "id": 3,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(service_http_request_duration_seconds_bucket[1m])) by (le, service_name))",
+          "legendFormat": "{{service_name}}"
+        }
+      ],
+      "title": "P95 Request Latency",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "id": 4,
+      "targets": [
+        {
+          "expr": "sum(rate(service_http_requests_total{status_code=~\"5..\"}[1m])) by (service_name) / sum(rate(service_http_requests_total[1m])) by (service_name) or sum(rate(service_http_requests_total[1m])) by (service_name) * 0",
+          "legendFormat": "{{service_name}}"
+        }
+      ],
+      "title": "5xx Error Rate",
+      "type": "timeseries"
     }
   ],
   "schemaVersion": 40,

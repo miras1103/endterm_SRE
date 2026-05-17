@@ -1,62 +1,92 @@
-# Containerized Microservices Incident Response Project
+# Endterm SRE Microservices Project
+
+End-to-end Site Reliability Engineering implementation for a distributed microservices system.
 
 Student: Miras Aliyev  
-Group: SE-2427  
+Group: SE-2427
 
-This project implements a containerized microservices system with Terraform infrastructure files, monitoring, and an incident response simulation.
+## Project Overview
 
-## Services
+This project demonstrates SRE practices for a containerized microservices application. It includes service decomposition, Docker-based deployment, Docker Swarm orchestration, Kubernetes manifests, Terraform infrastructure provisioning, Ansible automation, monitoring, alerting, incident simulation, recovery, and capacity planning.
 
-- Frontend served by Nginx on port `80`
-- Nginx API gateway on port `8080`
-- Authentication service on port `8001`
-- User service on port `8002`
-- Product service on port `8003`
-- Order service on port `8004`
-- Chat service on port `8005`
-- PostgreSQL database on port `5432`
-- Prometheus on port `9090`
-- Grafana on port `3000`
+The system contains six backend microservices, a frontend, an API gateway, PostgreSQL, Prometheus, and Grafana.
+
+## Architecture
+
+```text
+User
+  |
+Frontend (Nginx, port 80)
+  |
+API Gateway (Nginx, port 8080)
+  |
+  +-- Auth Service    (8001)
+  +-- User Service    (8002)
+  +-- Product Service (8003)
+  +-- Order Service   (8004)
+  +-- Chat Service    (8005)
+  +-- Payment Service (8006)
+  |
+PostgreSQL (5432)
+
+Observability:
+Prometheus (9090) -> Grafana (3000)
+```
+
+## Repository Structure
+
+```text
+services/       FastAPI microservices
+frontend/       Nginx-served web UI
+gateway/        Nginx API gateway configuration
+monitoring/     Prometheus, alert rules, Grafana provisioning
+incident/       Incident simulation override
+k8s/            Kubernetes manifests
+ansible/        Ansible inventory and playbooks
+terraform/      Infrastructure as Code files
+scripts/        Validation, load test, Swarm helper scripts
+docs/           Report, postmortem, Terraform guide
+evidence/       Screenshot evidence
+```
 
 ## Prerequisites
 
-- Windows 10 or Windows 11
 - Docker Desktop
+- Docker Compose
+- Kubernetes enabled in Docker Desktop, or another local Kubernetes cluster
+- WSL Ubuntu for Ansible
 - Terraform
-- A terminal such as PowerShell
+- PowerShell
 
-## Run The System
+Copy the example environment file if needed:
 
 ```powershell
-docker compose up --build -d
+Copy-Item .env.example .env
+```
+
+## Local Docker Compose Deployment
+
+The main `docker-compose.yml` is also used for Swarm and therefore uses an overlay network. For local Docker Compose, use the Ansible/local override file:
+
+```powershell
+docker compose -f docker-compose.yml -f ansible/docker-compose.local.yml up --build -d
+docker compose -f docker-compose.yml -f ansible/docker-compose.local.yml ps
 ```
 
 Open:
 
 - Frontend: http://localhost
-- Login page: http://localhost/login.html
-- Register page: http://localhost/register.html
-- Products page: http://localhost/products.html
-- Orders page: http://localhost/orders.html
-- Chat page: http://localhost/chat.html
-- Status page: http://localhost/status.html
-- API gateway: http://localhost:8080
+- API Gateway: http://localhost:8080
 - Prometheus: http://localhost:9090
 - Grafana: http://localhost:3000
 
-Grafana login:
+Grafana credentials:
 
-- Username: `admin`
-- Password: `admin123`
-
-## Validate Services
-
-```powershell
-docker compose ps
-docker compose logs order-service
+```text
+admin / admin123
 ```
 
-Health checks:
+Useful health checks:
 
 ```powershell
 Invoke-RestMethod http://localhost:8080/auth/health
@@ -64,165 +94,247 @@ Invoke-RestMethod http://localhost:8080/users/health
 Invoke-RestMethod http://localhost:8080/products/health
 Invoke-RestMethod http://localhost:8080/orders/health
 Invoke-RestMethod http://localhost:8080/chat/health
+Invoke-RestMethod http://localhost:8080/payment/health
 ```
 
-## Simulate The Incident
-
-The incident introduces an incorrect PostgreSQL hostname for the Order Service.
+Stop local Compose:
 
 ```powershell
-docker compose -f docker-compose.yml -f incident/docker-compose.incident.yml up -d order-service
-docker compose logs order-service
+docker compose -f docker-compose.yml -f ansible/docker-compose.local.yml down
+```
+
+## Docker Swarm Deployment
+
+Build local service images:
+
+```powershell
+.\scripts\build_swarm_images.ps1
+```
+
+Initialize Swarm if needed:
+
+```powershell
+docker swarm init
+```
+
+Deploy the stack:
+
+```powershell
+docker stack deploy -c docker-compose.yml app
+```
+
+Validate:
+
+```powershell
+docker stack ls
+docker stack services app
+docker stack ps app
+docker network inspect app_application-network
+```
+
+The Swarm deployment uses the overlay network defined in `docker-compose.yml`.
+
+## Kubernetes Deployment
+
+Apply the Kubernetes manifest:
+
+```powershell
+kubectl apply -f k8s/microservices.yaml
+```
+
+Validate:
+
+```powershell
+kubectl get pods -n microservices
+kubectl get deployments -n microservices
+kubectl get svc -n microservices
+kubectl get configmap -n microservices
+kubectl get hpa -n microservices
 ```
 
 Expected result:
 
-- Order creation fails
-- Order Service logs show a database connection error
-- Prometheus target for the Order Service becomes unhealthy or returns failed metrics collection
-
-## Restore The Service
-
-```powershell
-docker compose up -d order-service
+```text
+auth-service      1/1 Running
+user-service      1/1 Running
+product-service   1/1 Running
+order-service     1/1 Running
+chat-service      1/1 Running
+payment-service   1/1 Running
+postgres          1/1 Running
 ```
 
-Then test:
+The Kubernetes manifest includes:
 
-```powershell
-Invoke-RestMethod http://localhost:8080/orders/health
+- `Namespace`
+- `ConfigMap`
+- `Deployment`
+- `Service`
+- `readinessProbe`
+- `livenessProbe`
+- `HorizontalPodAutoscaler`
+- `imagePullPolicy: IfNotPresent` for local Docker Desktop images
+
+## Ansible Automation
+
+Run Ansible from WSL Ubuntu:
+
+```bash
+cd <project-directory>
+ansible --version
+ansible-playbook ansible/playbooks/install_docker.yml
+ansible-playbook ansible/playbooks/deploy_compose.yml
+```
+
+The deployment playbook runs:
+
+```bash
+docker compose -f docker-compose.yml -f ansible/docker-compose.local.yml up --build -d
+```
+
+Successful evidence should show:
+
+```text
+PLAY RECAP
+localhost : ok=3 changed=1 failed=0
 ```
 
 ## Terraform
 
-Terraform files are in the `terraform` folder.
-Detailed Terraform documentation is available in `docs/terraform-guide.md`.
+Terraform files are located in `terraform/`.
 
 ```powershell
 cd terraform
 terraform init
+terraform fmt -check -recursive
 terraform plan
 terraform apply
 ```
 
-Set real cloud credentials before applying. The configuration is written for AWS EC2.
+The Terraform configuration provisions cloud infrastructure such as networking, security rules, and a VM target for deployment. Configure real cloud credentials before running `terraform apply`.
 
-## PDF Report
+Detailed notes are in:
 
-Open `docs/final-report.html` in a browser and print it as PDF. The report contains the required deployment guide, Terraform explanation, incident response report, postmortem, and screenshot evidence placeholders.
-
-## Assignment 6 We Added
-
-Assignment 6 extends the previous incident response and Terraform work with SRE automation, monitoring-based alerting, and capacity planning for the Dockerized microservices system.
-
-### Automation Mechanisms
-
-- Added `restart: unless-stopped` policies for the application, database, gateway, frontend, Prometheus, and Grafana containers.
-- Added Docker health checks for the backend microservices using their HTTP `/health` endpoints.
-- Added health checks for the API gateway and frontend.
-- Added an API gateway `/health` endpoint in `gateway/nginx.conf`.
-- Connected Prometheus alert rules through `monitoring/alert_rules.yml`.
-- Added pre-deployment validation in `scripts/validate_config.ps1` to check important configuration before deployment.
-
-Run validation before starting the system:
-
-```powershell
-.\scripts\validate_config.ps1
-docker compose up --build -d
+```text
+docs/terraform-guide.md
 ```
 
-The validation script checks:
+## Monitoring And Alerting
 
-- Required environment variables in `.env`.
-- Matching variables in `.env.example` as the deployment template.
-- Correct PostgreSQL `DATABASE_URL` format and Docker hostname.
-- Template variable usage in `docker-compose.yml` and `docker-stack.yml`.
-- API gateway upstream endpoints for all backend services.
-- Prometheus scrape endpoints and Docker health check URLs.
+Prometheus configuration:
 
-### Monitoring And Alerting
+```text
+monitoring/prometheus.yml
+```
 
-Prometheus now loads alert rules from:
+Alert rules:
 
 ```text
 monitoring/alert_rules.yml
 ```
 
-Implemented alert conditions:
+Grafana provisioning:
 
-- `ServiceDown`: triggers when Prometheus cannot scrape a service.
-- `HighErrorRate`: triggers when 5xx responses are above 5 percent.
-- `HighLatency`: triggers when p95 request latency is above 1 second.
+```text
+monitoring/grafana/provisioning/
+```
 
-Useful Prometheus pages:
+Useful pages:
 
-- Targets: http://localhost:9090/targets
-- Alerts: http://localhost:9090/alerts
+- Prometheus targets: http://localhost:9090/targets
+- Prometheus alerts: http://localhost:9090/alerts
+- Grafana dashboards: http://localhost:3000
 
-### Capacity Planning
+Implemented SRE signals:
 
-The system capacity is analyzed using Prometheus metrics and a lightweight load script:
+- Availability
+- Request rate
+- Error rate
+- Latency
+- Service uptime
+- Container health
+
+## Incident Simulation
+
+The incident simulates an Order Service failure caused by an incorrect database configuration.
+
+Start the faulty configuration:
+
+```powershell
+docker compose -f docker-compose.yml -f ansible/docker-compose.local.yml -f incident/docker-compose.incident.yml up -d order-service
+docker compose -f docker-compose.yml -f ansible/docker-compose.local.yml logs order-service
+```
+
+Expected impact:
+
+- Order creation fails
+- Order Service logs show database connection errors
+- Monitoring detects degraded service behavior
+
+Restore:
+
+```powershell
+docker compose -f docker-compose.yml -f ansible/docker-compose.local.yml up -d order-service
+Invoke-RestMethod http://localhost:8080/orders/health
+```
+
+Postmortem:
+
+```text
+docs/incident-postmortem.md
+```
+
+## Capacity Planning
+
+Load test helper:
 
 ```powershell
 .\scripts\load_test_orders.ps1 -Requests 100 -DelayMilliseconds 50
 ```
 
-Metrics used for capacity analysis:
+Capacity findings:
 
-- CPU usage and memory utilization from containers
-- Request rate through `service_http_requests_total`
-- Error rate through HTTP `5xx` responses
-- Response latency through `service_http_request_duration_seconds`
-- Container health and restart behavior through Docker
+- Order Service is the main request-path bottleneck.
+- PostgreSQL can become a shared dependency bottleneck.
+- Order and Payment workflows are the most sensitive user-facing paths.
+- Horizontal scaling should prioritize Order Service replicas.
+- Kubernetes HPA is defined for Order Service and Payment Service with `minReplicas: 1` and `maxReplicas: 3`.
+- Database connection pooling should be added before heavy API scaling.
 
-Observed capacity risks:
+## Validation
 
-- Order Service becomes the main bottleneck under increased request load.
-- Response time increases when the Order Service or database is saturated.
-- Error rates may increase if database connections or CPU resources are insufficient.
-- PostgreSQL can become a shared bottleneck because Product and Order workflows both depend on it.
-
-### Scaling Strategy
-
-Recommended scaling approach:
-
-- Horizontally scale the Order Service when request rate increases.
-- Add a load balancer or orchestration platform such as Kubernetes for multiple service replicas.
-- Vertically scale the VM with Terraform by increasing `instance_type` in `terraform/terraform.tfvars`.
-- Add database connection pooling before scaling API replicas heavily.
-- Optimize database queries and indexes if latency grows during load tests.
-
-Current Terraform capacity setting:
-
-```hcl
-instance_type = "t3.micro"
-```
-
-For higher load, change it for example to:
-
-```hcl
-instance_type = "t3.small"
-```
-
-Then apply:
+Run configuration validation before deployment:
 
 ```powershell
-cd terraform
-terraform plan
-terraform apply
+.\scripts\validate_config.ps1
 ```
 
-### Evidence To Include In The PDF
+This checks environment variables, Docker Compose/Swarm configuration, gateway routes, Prometheus scrape targets, and health check endpoints.
 
-Recommended screenshots for Assignment 6:
+## Evidence For Report
 
-- `docker compose ps` showing healthy services.
-- Prometheus targets page showing all services as up.
-- Prometheus alerts page showing configured rules.
-- Grafana dashboard during normal load.
-- Grafana dashboard or Prometheus metrics during load test.
-- Order Service recovery after stopping or misconfiguring the container.
+Recommended screenshots:
 
-### Summary
+- `docker compose ... ps`
+- `docker stack services app`
+- `docker stack ps app`
+- `kubectl get pods -n microservices`
+- `kubectl get deployments -n microservices`
+- `kubectl get svc -n microservices`
+- `ansible --version`
+- `ansible-playbook ansible/playbooks/deploy_compose.yml`
+- Prometheus targets page
+- Grafana dashboard
+- Incident logs and recovery command output
 
-For Assignment 6, we added automation for deployment safety, service recovery, health checking, monitoring alerts, configuration validation, and basic load testing. We also documented capacity risks and scaling strategies based on SRE principles.
+## Final Deliverables
+
+- Microservices source code
+- Docker Compose and Docker Swarm configuration
+- Kubernetes manifest
+- Terraform IaC files
+- Ansible automation playbooks
+- Monitoring and alerting configuration
+- Incident response and postmortem documentation
+- Screenshot evidence
+- Final PDF report with GitHub repository link
