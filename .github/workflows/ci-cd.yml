@@ -61,7 +61,7 @@ jobs:
 
       - name: Validate Kubernetes manifest syntax
         run: |
-          python -c "import pathlib, yaml; docs=[doc for doc in yaml.safe_load_all(pathlib.Path('k8s/microservices.yaml').read_text()) if doc]; assert docs; assert all(doc.get('apiVersion') and doc.get('kind') and doc.get('metadata') for doc in docs)"
+          python -c "import pathlib, yaml; docs=[]; [docs.extend([doc for doc in yaml.safe_load_all(path.read_text()) if doc]) for path in pathlib.Path('k8s').glob('*.yaml')]; assert docs; assert all(doc.get('apiVersion') and doc.get('kind') and doc.get('metadata') for doc in docs)"
 
       - name: Validate Ansible playbooks syntax
         run: |
