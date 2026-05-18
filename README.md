@@ -137,10 +137,11 @@ The Swarm deployment uses the overlay network defined in `docker-compose.yml`.
 
 ## Kubernetes Deployment
 
-Apply the Kubernetes manifest:
+Apply the Kubernetes manifests:
 
 ```powershell
-kubectl apply -f k8s/microservices.yaml
+kubectl apply -f k8s/namespace.yaml
+kubectl apply -f k8s/
 ```
 
 Validate:
@@ -165,7 +166,7 @@ payment-service   1/1 Running
 postgres          1/1 Running
 ```
 
-The Kubernetes manifest includes:
+The Kubernetes manifests include:
 
 - `Namespace`
 - `ConfigMap`
@@ -388,7 +389,7 @@ Recommended screenshots:
 
 - Microservices source code
 - Docker Compose and Docker Swarm configuration
-- Kubernetes manifest
+- Kubernetes manifests
 - Terraform IaC files
 - Ansible automation playbooks
 - Monitoring and alerting configuration
